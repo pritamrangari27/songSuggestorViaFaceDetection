@@ -207,13 +207,15 @@ def logout():
     return resp
 
 @app.route("/dashboard")
-@jwt_required(optional=True)
+@jwt_required()
 def dashboard():
-    username = get_jwt_identity() or "Guest"
+    username = get_jwt_identity()
     users = load_users()
     user_info = users.get(username,{})
-    # Pass the actual username to JS via template
-    return render_template("dashboard.html", username=username, gender=user_info.get("gender",""), age=user_info.get("age",""))
+    return render_template("dashboard.html", 
+                           username=username, 
+                           gender=user_info.get("gender",""), 
+                           age=user_info.get("age",""))
 
 @app.route("/update_profile",methods=["POST"])
 @jwt_required()
@@ -226,7 +228,7 @@ def update_profile():
     return redirect(url_for("dashboard"))
 
 @app.route("/predict",methods=["POST"])
-@jwt_required(optional=True)
+@jwt_required()
 def predict():
     global last_mood
     body=request.get_json(silent=True)
@@ -264,34 +266,33 @@ def songs():
 # Chat routes
 # ---------------------------
 @app.route("/chat/send",methods=["POST"])
-@jwt_required(optional=True)
+@jwt_required()
 def chat_send():
     body=request.get_json()
     if not body or "to" not in body or "text" not in body:
         return jsonify({"error":"Missing fields"}),400
-    username = get_jwt_identity() or "Guest"
+    username = get_jwt_identity()
     msg={"from":username,"to":body["to"],"text":body["text"],"ts":int(time.time())}
     msgs=load_messages(); msgs.append(msg); save_messages(msgs)
     return jsonify({"status":"ok"})
 
 @app.route("/chat/fetch",methods=["GET"])
-@jwt_required(optional=True)
+@jwt_required()
 def chat_fetch():
     chat_with=request.args.get("user")
     if not chat_with: return jsonify({"error":"Missing user"}),400
-    username=get_jwt_identity() or "Guest"
+    username=get_jwt_identity()
     msgs=load_messages()
     convo=[m for m in msgs if (m["from"]==username and m["to"]==chat_with) or (m["from"]==chat_with and m["to"]==username)]
     convo.sort(key=lambda x:x["ts"])
     return jsonify(convo)
 
 @app.route("/users/list",methods=["GET"])
-@jwt_required(optional=True)
+@jwt_required()
 def users_list():
     users=load_users()
-    username=get_jwt_identity() or "Guest"
+    username=get_jwt_identity()
     others=[u for u in users if u!=username]
-    if username!="Guest": others.insert(0,"Guest")
     return jsonify(others)
 
 # ---------------------------
