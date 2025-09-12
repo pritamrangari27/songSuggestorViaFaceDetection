@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Mood Detection App</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: #121212;
+            color: #B3B3B3;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            cursor: none;
+        }
+
+        .cursor {
+            position: fixed;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #1DB954;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            transition: transform 0.1s ease, background 0.2s ease;
+            z-index: 9999;
+        }
+
+        .login-container {
+            background-color: #191414;
+            padding: 40px 30px;
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        h2 {
+            color: #1DB954;
+            margin-bottom: 20px;
+        }
+
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 12px 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border: none;
+            background-color: #282828;
+            color: #fff;
+        }
+
+        input::placeholder {
+            color: #B3B3B3;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px 0;
+            margin-top: 20px;
+            border: none;
+            border-radius: 8px;
+            background-color: #1DB954;
+            color: #fff;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s;
+        }
+
+        button:hover {
+            background-color: #1ed760;
+            transform: scale(1.05);
+        }
+
+        .captcha-section {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 15px;
+        }
+
+        .captcha-section img {
+            border-radius: 8px;
+            height: 60px;
+        }
+
+        .captcha-section input {
+            flex: 1;
+            margin-left: 10px;
+        }
+
+        .register-link {
+            margin-top: 15px;
+            display: block;
+            color: #1DB954;
+            text-decoration: none;
+        }
+
+        .register-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="cursor"></div>
+    <div class="login-container">
+        <h2>Login</h2>
+        <form method="POST" action="{{ url_for('login') }}">
+            <input type="text" name="username" placeholder="Username" required>
+            <input type="password" name="password" placeholder="Password" required>
+
+            <!-- CAPTCHA section -->
+            <div class="captcha-section">
+                <img src="{{ captcha_image }}" alt="Captcha">
+                <input type="text" name="captcha" placeholder="Enter CAPTCHA" required>
+                <input type="hidden" name="captcha_code" value="{{ captcha_code }}">
+            </div>
+
+            <button type="submit">Login</button>
+        </form>
+        <a class="register-link" href="{{ url_for('register') }}">Don't have an account? Register</a>
+    </div>
+
+    <script>
+        // Custom cursor
+        const cursor = document.querySelector('.cursor');
+        document.addEventListener('mousemove', e => {
+            cursor.style.left = e.clientX + 'px';
+            cursor.style.top = e.clientY + 'px';
+        });
+
+        const buttons = document.querySelectorAll('button, .register-link');
+        buttons.forEach(btn => {
+            btn.addEventListener('mouseover', () => cursor.style.transform = 'translate(-50%, -50%) scale(2)');
+            btn.addEventListener('mouseout', () => cursor.style.transform = 'translate(-50%, -50%) scale(1)');
+        });
+    </script>
+</body>
+</html>

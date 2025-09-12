@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Song Suggestor Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+<style>
+body {
+  font-family: 'Montserrat', sans-serif;
+  margin: 0;
+  background-color: #121212;
+  color: #fff;
+  overflow-x: hidden;
+  cursor: none;
+}
+.cursor {
+  position: fixed;
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: #1DB954;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  transition: transform 0.1s ease, background 0.2s ease;
+  z-index: 9999;
+}
+.sidebar {
+  position: fixed; top: 0; left: 0; width: 240px; height: 100%; background: #191414;
+  padding: 20px; box-shadow: 2px 0 10px rgba(0,0,0,0.5);
+}
+.sidebar h2 { color: #1DB954; margin-bottom: 20px; }
+.sidebar ul { list-style: none; padding: 0; }
+.sidebar ul li { margin: 15px 0; }
+.sidebar ul li a { color: #B3B3B3; text-decoration: none; font-size: 1rem; cursor: pointer; }
+.sidebar ul li a:hover { color: #1DB954; }
+
+.main { margin-left: 260px; padding: 20px; }
+.top-bar { display: flex; justify-content: flex-end; align-items: center; margin-bottom: 20px; }
+.user-info { display: flex; align-items: center; background: #282828; padding: 10px 15px; border-radius: 12px; cursor: pointer; }
+.user-info .avatar { width: 32px; height: 32px; background: #1DB954; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 10px; font-weight: bold; color: #000; }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; }
+.card { background: #191414; border-radius: 16px; padding: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+
+.modal {
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  background: #191414; border-radius: 16px; text-align: center; z-index: 10000;
+  padding: 20px; width: 400px; max-width: 95%; box-shadow: 0 0 15px #1DB954;
+}
+.modal.video-modal { width: 420px; }
+.modal.song-modal { width: 600px; }
+
+.modal video { border-radius: 12px; width: 100%; border: 3px solid #1DB954; }
+.modal button { margin-top: 10px; padding: 8px 12px; border: none; border-radius: 6px; background: #1DB954; color: #000; font-weight: bold; cursor: pointer; }
+.modal button:hover { background: #1ed760; }
+.close-btn { position: absolute; top: 10px; right: 10px; border: none; border-radius: 50%; width: 30px; height: 30px; background: #1DB954; color: #000; font-weight: bold; cursor: pointer; }
+
+#song-grid { display: grid; grid-template-columns: 1fr; gap: 15px; margin-top: 20px; }
+#song-grid iframe { width: 100%; height: 80px; border-radius: 12px; border: none; }
+
+#chat-box {
+  height: 300px;
+  overflow-y: hidden; /* hide scrollbar */
+  margin: 10px 0;
+  background: #282828;
+  padding: 10px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-message {
+  padding: 10px 14px;
+  border-radius: 20px;
+  margin-bottom: 8px;
+  max-width: 70%;
+  word-wrap: break-word;
+  display: block;
+}
+
+.chat-sent {
+  background: #1DB954;
+  color: #000;
+  align-self: flex-end;  /* right side */
+  text-align: right;
+  border-bottom-right-radius: 4px;
+  border-bottom-left-radius: 20px;
+}
+
+.chat-received {
+  background: #282828;
+  color: #fff;
+  align-self: flex-start; /* left side */
+  text-align: left;
+  border-bottom-left-radius: 4px;
+  border-bottom-right-radius: 20px;
+}
+
+input, select { padding: 6px; border-radius: 6px; border: none; margin-bottom: 10px; width: 100%; }
+button { cursor: pointer; }
+</style>
+</head>
+<body>
+<div class="cursor"></div>
+
+<div class="sidebar">
+  <h2>Song Suggestor</h2>
+  <ul>
+    <li><a id="sidebarDashboard">Dashboard</a></li>
+    <li><a id="sidebarChat">Chat</a></li>
+    <li><a id="sidebarSettings">Settings</a></li>
+    <li><a href="{{ url_for('logout') }}">Logout</a></li>
+  </ul>
+</div>
+
+<div class="main">
+  <div class="top-bar">
+    <div class="user-info" id="openProfile">
+      <span class="avatar">{{ username[0]|default("G")|upper }}</span>
+      <span class="username">{{ username|default("Guest") }}</span>
+    </div>
+  </div>
+  <div class="grid">
+    <div class="card" id="welcome-card">
+      <h2>Welcome, {{ username|default("Guest") }}!</h2>
+      <p>This is your Mood Detection Dashboard.</p>
+      <button id="detectMoodBtn">Detect Mood</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ------------------ Cursor ------------------
+const cursor = document.querySelector('.cursor');
+document.addEventListener('mousemove', e => { cursor.style.left = e.clientX + 'px'; cursor.style.top = e.clientY + 'px'; });
+document.addEventListener('mouseover', e=>{
+  if(e.target.closest('button,a,input,select,.close-btn')){
+    cursor.style.transform='translate(-50%,-50%) scale(2)';
+  } else { cursor.style.transform='translate(-50%,-50%) scale(1)'; }
+});
+
+let currentUsername = "{{ username|default('Guest') }}";
+let currentGender = "{{ gender|default('') }}";
+let currentAge = "{{ age|default('') }}";
+
+function closeAllPopups() {
+  document.querySelectorAll('.modal').forEach(modal => {
+    const video = modal.querySelector("video");
+    if(video && video.srcObject) video.srcObject.getTracks().forEach(t=>t.stop());
+    modal.remove();
+  });
+}
+function createPopup(title, innerHTML, extraClass="") {
+  closeAllPopups();
+  const modal = document.createElement("div"); modal.className="modal "+extraClass;
+  modal.innerHTML = `<button class="close-btn">X</button><h2>${title}</h2>${innerHTML}`;
+  document.body.appendChild(modal);
+  modal.querySelector(".close-btn").addEventListener("click", ()=>modal.remove());
+  return modal;
+}
+
+// ------------------ Profile ------------------
+document.getElementById("openProfile").addEventListener("click", ()=>{
+  const modal = createPopup("Edit Profile", `
+    <input type="text" placeholder="Gender" id="profileGender" value="${currentGender}">
+    <input type="number" placeholder="Age" id="profileAge" value="${currentAge}">
+    <button id="saveProfileBtn">Save</button>
+  `);
+  modal.querySelector("#saveProfileBtn").addEventListener("click", ()=>{
+    const gender = modal.querySelector("#profileGender").value;
+    const age = modal.querySelector("#profileAge").value;
+    fetch("/update_profile",{method:"POST", headers:{"Content-Type":"application/x-www-form-urlencoded"}, body:`gender=${gender}&age=${age}`})
+      .then(()=>{ modal.remove(); location.reload(); });
+  });
+});
+
+// ------------------ Settings ------------------
+document.getElementById("sidebarSettings").addEventListener("click", ()=>{
+  const modal = createPopup("Settings", `
+    <input type="text" placeholder="Gender" id="settingsGender" value="${currentGender}">
+    <input type="number" placeholder="Age" id="settingsAge" value="${currentAge}">
+    <button id="saveSettingsBtn">Save</button>
+  `);
+  modal.querySelector("#saveSettingsBtn").addEventListener("click", ()=>{
+    const gender = modal.querySelector("#settingsGender").value;
+    const age = modal.querySelector("#settingsAge").value;
+    fetch("/update_profile",{method:"POST", headers:{"Content-Type":"application/x-www-form-urlencoded"}, body:`gender=${gender}&age=${age}`})
+      .then(()=>{ modal.remove(); location.reload(); });
+  });
+});
+
+// ------------------ Chat ------------------
+document.getElementById("sidebarChat").addEventListener("click", ()=>{
+  const modal = createPopup("Chat", `
+    <select id="chat-users"></select>
+    <div id="chat-box"></div>
+    <div style="display:flex;">
+      <input type="text" id="chat-input" placeholder="Type message..." style="flex:1; border-radius:20px; border:none; padding:10px;">
+      <button id="chat-send" style="margin-left:10px; border-radius:20px;">Send</button>
+    </div>
+  `);
+
+  const chatBox = modal.querySelector("#chat-box");
+  let currentChatUser = null;
+
+  function loadChatUsers(){
+    fetch("/users/list").then(r=>r.json()).then(users=>{
+      const sel = modal.querySelector("#chat-users");
+      sel.innerHTML="";
+      const defaultOption=document.createElement("option");
+      defaultOption.value=""; defaultOption.innerText="Select User"; sel.appendChild(defaultOption);
+      users.filter(u=>u!==currentUsername).forEach(u=>{
+        const opt=document.createElement("option"); opt.value=u; opt.innerText=u; sel.appendChild(opt);
+      });
+    });
+  }
+
+  function loadMessages(){
+    if(!currentChatUser) return;
+    fetch(`/chat/fetch?user=${currentChatUser}`)
+      .then(r=>r.json()).then(msgs=>{
+        if(msgs.error){ chatBox.innerHTML=`<p style='color:red;'>${msgs.error}</p>`; return; }
+        if(msgs.length===0){ chatBox.innerHTML="<p style='color:gray;'>No messages yet.</p>"; return; }
+
+        chatBox.innerHTML = msgs.map(m=>{
+          const isSent = m.from === currentUsername;
+          const cls = isSent ? "chat-sent" : "chat-received";
+          const displayName = isSent ? "You" : m.from;
+          return `<div class="chat-message ${cls}">
+                    <div><b>${displayName}</b></div>
+                    <div>${m.text}</div>
+                  </div>`;
+        }).join("");
+        chatBox.scrollTop = chatBox.scrollHeight;
+      });
+  }
+
+  modal.querySelector("#chat-users").addEventListener("change", e=>{
+    currentChatUser=e.target.value; loadMessages();
+  });
+
+  modal.querySelector("#chat-send").addEventListener("click", ()=>{
+    const text = modal.querySelector("#chat-input").value;
+    if(!text || !currentChatUser) return alert("Select a user and type a message.");
+    fetch("/chat/send",{method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({to:currentChatUser, text})})
+      .then(r=>r.json()).then(res=>{
+        if(res.error){ alert(res.error); return; }
+        modal.querySelector("#chat-input").value="";
+        loadMessages();
+      });
+  });
+
+  loadChatUsers();
+  setInterval(loadMessages, 3000);
+});
+
+// ------------------ Mood Detection ------------------
+document.getElementById("detectMoodBtn").addEventListener("click", ()=>{
+  closeAllPopups();
+  const modal = createPopup("Detecting Mood", `
+    <video autoplay id="webcam-video" style="width:100%; border-radius:12px; border:3px solid #1DB954;"></video>
+    <button id="captureBtn">Capture Face</button>
+    <div id="mood-result"></div>
+  `, "video-modal");
+
+  const videoEl = modal.querySelector("#webcam-video");
+  const captureBtn = modal.querySelector("#captureBtn");
+  const moodResult = modal.querySelector("#mood-result");
+
+  navigator.mediaDevices.getUserMedia({video:true}).then(stream=>{
+    videoEl.srcObject = stream;
+    captureBtn.addEventListener("click", ()=>{
+      const canvas=document.createElement("canvas");
+      canvas.width=videoEl.videoWidth; canvas.height=videoEl.videoHeight;
+      const ctx=canvas.getContext("2d"); ctx.drawImage(videoEl,0,0);
+      const dataURL=canvas.toDataURL("image/jpeg");
+
+      fetch("/predict",{method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({image:dataURL})})
+        .then(r=>r.json())
+        .then(res=>{
+          stream.getTracks().forEach(t=>t.stop());
+          if(!res.emotion || res.emotion==="No face detected"){
+            moodResult.innerHTML="<p style='color:red'>No face detected. Try again.</p>";
+          } else {
+            moodResult.innerHTML=`<p>Your mood: <b>${res.emotion}</b></p><button id="suggestBtn">Suggest Songs</button>`;
+            modal.querySelector("#suggestBtn").addEventListener("click", ()=>openSongPopup(res.emotion));
+          }
+        });
+    });
+  }).catch(err=>{ alert("Webcam access denied."); modal.remove(); });
+});
+
+// ------------------ Songs Popup ------------------
+function openSongPopup(mood){
+  closeAllPopups();
+  const modal = createPopup(`Your Mood: ${mood}`, `<div id="song-grid"></div>`, "song-modal");
+  const songGrid = modal.querySelector("#song-grid");
+
+  fetch("/songs",{method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({mood})})
+    .then(r=>r.json()).then(res=>{
+      if(!res.songs || res.songs.length===0){
+        songGrid.innerHTML="<p style='color:gray;'>No songs found.</p>";
+        return;
+      }
+      res.songs.slice(0,5).forEach(track=>{
+        const iframe=document.createElement("iframe"); iframe.src=track.url; songGrid.appendChild(iframe);
+      });
+    });
+}
+</script>
+</body>
+</html>

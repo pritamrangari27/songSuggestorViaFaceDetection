@@ -1,0 +1,8 @@
+{
+  "Pritam": {
+    "password": "scrypt:32768:8:1$OuR3RbsaxE2lb9Tn$a5ede5ee831457290078a41531be5f9358c97bb496af0ab8ce6745cceb9d3a2a32d1441c2e03cad99d6aa08e5821bc032b1c1c4b64f826394654d411fb0f9ce1"
+  },
+  "Sharvari": {
+    "password": "scrypt:32768:8:1$rWoL0H6lGWFOuHSt$ab3ddf7e669cad75975ba7324fcc34217b5bffc0bff4032bc7deb0c6a24d71593283933d562494b11aae8b16f8672cb6a16a8f9cc2fe68080858c97a3759ec2b"
+  }
+}

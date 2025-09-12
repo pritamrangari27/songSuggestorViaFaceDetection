@@ -1,0 +1,9 @@
+flask
+flask-jwt-extended
+werkzeug
+tensorflow
+numpy
+opencv-python
+pillow
+python-dotenv
+gunicorn

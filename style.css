@@ -1,0 +1,99 @@
+/* Reset some defaults */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Background styling */
+body {
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+}
+
+/* Registration card */
+.register-container {
+    background: #fff;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0px 6px 20px rgba(0, 0, 0, 0.15);
+    width: 350px;
+    text-align: center;
+}
+
+/* Title */
+.register-container h2 {
+    margin-bottom: 1.5rem;
+    color: #333;
+}
+
+/* Input fields */
+.register-container input[type="text"],
+.register-container input[type="password"] {
+    width: 100%;
+    padding: 10px;
+    margin: 8px 0;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    outline: none;
+    transition: border 0.3s ease;
+}
+
+.register-container input[type="text"]:focus,
+.register-container input[type="password"]:focus {
+    border: 1px solid #2575fc;
+}
+
+/* Captcha section */
+.captcha-box {
+    margin: 1rem 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.captcha-box img {
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    height: 60px;
+}
+
+.captcha-box input {
+    flex: 1;
+    margin-left: 10px;
+}
+
+/* Button */
+.register-container button {
+    width: 100%;
+    padding: 10px;
+    margin-top: 1rem;
+    background: #2575fc;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background 0.3s ease;
+}
+
+.register-container button:hover {
+    background: #1b5ed9;
+}
+
+/* Link to login */
+.register-container p {
+    margin-top: 1rem;
+    font-size: 14px;
+    color: #666;
+}
+
+.register-container a {
+    color: #2575fc;
+    text-decoration: none;
+    font-weight: 500;
+}
