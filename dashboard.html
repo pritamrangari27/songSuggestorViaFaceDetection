@@ -30,9 +30,20 @@ body {
 }
 .sidebar h2 { color: #1DB954; margin-bottom: 20px; }
 .sidebar ul { list-style: none; padding: 0; }
-.sidebar ul li { margin: 15px 0; }
+.sidebar ul li { margin: 15px 0; position: relative; }
 .sidebar ul li a { color: #B3B3B3; text-decoration: none; font-size: 1rem; cursor: pointer; }
 .sidebar ul li a:hover { color: #1DB954; }
+
+#sidebarChat::after {
+  content: '';
+  display: none;
+  width: 10px; height: 10px;
+  background: red;
+  border-radius: 50%;
+  position: absolute;
+  top: 12px; right: 12px;
+}
+#sidebarChat.new-message::after { display: block; }
 
 .main { margin-left: 260px; padding: 20px; }
 .top-bar { display: flex; justify-content: flex-end; align-items: center; margin-bottom: 20px; }
@@ -59,41 +70,38 @@ body {
 #song-grid iframe { width: 100%; height: 80px; border-radius: 12px; border: none; }
 
 #chat-box {
-  height: 300px;
-  overflow-y: hidden; /* hide scrollbar */
+  height: 400px;
+  overflow-y: auto;
   margin: 10px 0;
-  background: #282828;
+  background: #121212;
   padding: 10px;
   border-radius: 8px;
   display: flex;
   flex-direction: column;
+  gap: 6px;
 }
 
 .chat-message {
   padding: 10px 14px;
   border-radius: 20px;
-  margin-bottom: 8px;
-  max-width: 70%;
+  max-width: 75%;
   word-wrap: break-word;
-  display: block;
 }
 
 .chat-sent {
   background: #1DB954;
   color: #000;
-  align-self: flex-end;  /* right side */
+  align-self: flex-end;
   text-align: right;
   border-bottom-right-radius: 4px;
-  border-bottom-left-radius: 20px;
 }
 
 .chat-received {
   background: #282828;
   color: #fff;
-  align-self: flex-start; /* left side */
+  align-self: flex-start;
   text-align: left;
   border-bottom-left-radius: 4px;
-  border-bottom-right-radius: 20px;
 }
 
 input, select { padding: 6px; border-radius: 6px; border: none; margin-bottom: 10px; width: 100%; }
@@ -116,13 +124,13 @@ button { cursor: pointer; }
 <div class="main">
   <div class="top-bar">
     <div class="user-info" id="openProfile">
-      <span class="avatar">{{ username[0]|default("G")|upper }}</span>
-      <span class="username">{{ username|default("Guest") }}</span>
+      <span class="avatar">{{ username[0]|upper }}</span>
+      <span class="username">{{ username }}</span>
     </div>
   </div>
   <div class="grid">
     <div class="card" id="welcome-card">
-      <h2>Welcome, {{ username|default("Guest") }}!</h2>
+      <h2>Welcome, {{ username }}!</h2>
       <p>This is your Mood Detection Dashboard.</p>
       <button id="detectMoodBtn">Detect Mood</button>
     </div>
@@ -130,18 +138,16 @@ button { cursor: pointer; }
 </div>
 
 <script>
-// ------------------ Cursor ------------------
 const cursor = document.querySelector('.cursor');
 document.addEventListener('mousemove', e => { cursor.style.left = e.clientX + 'px'; cursor.style.top = e.clientY + 'px'; });
 document.addEventListener('mouseover', e=>{
-  if(e.target.closest('button,a,input,select,.close-btn')){
-    cursor.style.transform='translate(-50%,-50%) scale(2)';
-  } else { cursor.style.transform='translate(-50%,-50%) scale(1)'; }
+  if(e.target.closest('button,a,input,select,.close-btn')) cursor.style.transform='translate(-50%,-50%) scale(2)';
+  else cursor.style.transform='translate(-50%,-50%) scale(1)';
 });
 
-let currentUsername = "{{ username|default('Guest') }}";
-let currentGender = "{{ gender|default('') }}";
-let currentAge = "{{ age|default('') }}";
+let currentUsername = "{{ username }}";
+let currentGender = "{{ gender }}";
+let currentAge = "{{ age }}";
 
 function closeAllPopups() {
   document.querySelectorAll('.modal').forEach(modal => {
@@ -150,6 +156,7 @@ function closeAllPopups() {
     modal.remove();
   });
 }
+
 function createPopup(title, innerHTML, extraClass="") {
   closeAllPopups();
   const modal = document.createElement("div"); modal.className="modal "+extraClass;
@@ -159,7 +166,7 @@ function createPopup(title, innerHTML, extraClass="") {
   return modal;
 }
 
-// ------------------ Profile ------------------
+// Profile
 document.getElementById("openProfile").addEventListener("click", ()=>{
   const modal = createPopup("Edit Profile", `
     <input type="text" placeholder="Gender" id="profileGender" value="${currentGender}">
@@ -174,7 +181,7 @@ document.getElementById("openProfile").addEventListener("click", ()=>{
   });
 });
 
-// ------------------ Settings ------------------
+// Settings
 document.getElementById("sidebarSettings").addEventListener("click", ()=>{
   const modal = createPopup("Settings", `
     <input type="text" placeholder="Gender" id="settingsGender" value="${currentGender}">
@@ -189,8 +196,11 @@ document.getElementById("sidebarSettings").addEventListener("click", ()=>{
   });
 });
 
-// ------------------ Chat ------------------
+// Chat
+function showUnreadDot(flag){ document.getElementById("sidebarChat").classList.toggle("new-message", flag); }
+
 document.getElementById("sidebarChat").addEventListener("click", ()=>{
+  showUnreadDot(false);
   const modal = createPopup("Chat", `
     <select id="chat-users"></select>
     <div id="chat-box"></div>
@@ -205,10 +215,8 @@ document.getElementById("sidebarChat").addEventListener("click", ()=>{
 
   function loadChatUsers(){
     fetch("/users/list").then(r=>r.json()).then(users=>{
-      const sel = modal.querySelector("#chat-users");
-      sel.innerHTML="";
-      const defaultOption=document.createElement("option");
-      defaultOption.value=""; defaultOption.innerText="Select User"; sel.appendChild(defaultOption);
+      const sel = modal.querySelector("#chat-users"); sel.innerHTML="";
+      const defaultOption=document.createElement("option"); defaultOption.value=""; defaultOption.innerText="Select User"; sel.appendChild(defaultOption);
       users.filter(u=>u!==currentUsername).forEach(u=>{
         const opt=document.createElement("option"); opt.value=u; opt.innerText=u; sel.appendChild(opt);
       });
@@ -217,26 +225,22 @@ document.getElementById("sidebarChat").addEventListener("click", ()=>{
 
   function loadMessages(){
     if(!currentChatUser) return;
-    fetch(`/chat/fetch?user=${currentChatUser}`)
-      .then(r=>r.json()).then(msgs=>{
-        if(msgs.error){ chatBox.innerHTML=`<p style='color:red;'>${msgs.error}</p>`; return; }
-        if(msgs.length===0){ chatBox.innerHTML="<p style='color:gray;'>No messages yet.</p>"; return; }
+    fetch(`/chat/fetch?user=${currentChatUser}`).then(r=>r.json()).then(msgs=>{
+      if(msgs.error){ chatBox.innerHTML=`<p style='color:red;'>${msgs.error}</p>`; return; }
+      if(msgs.length===0){ chatBox.innerHTML="<p style='color:gray;'>No messages yet.</p>"; return; }
 
-        chatBox.innerHTML = msgs.map(m=>{
-          const isSent = m.from === currentUsername;
-          const cls = isSent ? "chat-sent" : "chat-received";
-          const displayName = isSent ? "You" : m.from;
-          return `<div class="chat-message ${cls}">
-                    <div><b>${displayName}</b></div>
-                    <div>${m.text}</div>
-                  </div>`;
-        }).join("");
-        chatBox.scrollTop = chatBox.scrollHeight;
-      });
+      chatBox.innerHTML = msgs.map(m=>{
+        const isSent = m.from === currentUsername;
+        const cls = isSent ? "chat-sent" : "chat-received";
+        const displayName = isSent ? "You" : m.from;
+        return `<div class="chat-message ${cls}"><div><b>${displayName}</b></div><div>${m.text}</div></div>`;
+      }).join("");
+      chatBox.scrollTop = chatBox.scrollHeight;
+    });
   }
 
   modal.querySelector("#chat-users").addEventListener("change", e=>{
-    currentChatUser=e.target.value; loadMessages();
+    currentChatUser = e.target.value; loadMessages();
   });
 
   modal.querySelector("#chat-send").addEventListener("click", ()=>{
@@ -254,7 +258,7 @@ document.getElementById("sidebarChat").addEventListener("click", ()=>{
   setInterval(loadMessages, 3000);
 });
 
-// ------------------ Mood Detection ------------------
+// Mood Detection
 document.getElementById("detectMoodBtn").addEventListener("click", ()=>{
   closeAllPopups();
   const modal = createPopup("Detecting Mood", `
@@ -290,7 +294,7 @@ document.getElementById("detectMoodBtn").addEventListener("click", ()=>{
   }).catch(err=>{ alert("Webcam access denied."); modal.remove(); });
 });
 
-// ------------------ Songs Popup ------------------
+// Songs Popup
 function openSongPopup(mood){
   closeAllPopups();
   const modal = createPopup(`Your Mood: ${mood}`, `<div id="song-grid"></div>`, "song-modal");
@@ -299,8 +303,7 @@ function openSongPopup(mood){
   fetch("/songs",{method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({mood})})
     .then(r=>r.json()).then(res=>{
       if(!res.songs || res.songs.length===0){
-        songGrid.innerHTML="<p style='color:gray;'>No songs found.</p>";
-        return;
+        songGrid.innerHTML="<p style='color:gray;'>No songs found.</p>"; return;
       }
       res.songs.slice(0,5).forEach(track=>{
         const iframe=document.createElement("iframe"); iframe.src=track.url; songGrid.appendChild(iframe);
