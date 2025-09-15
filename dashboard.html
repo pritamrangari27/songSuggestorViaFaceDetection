@@ -12,18 +12,9 @@ body {
   background-color: #121212;
   color: #fff;
   overflow-x: hidden;
-  cursor: none;
+  cursor: default; /* normal cursor */
 }
-.cursor {
-  position: fixed;
-  width: 20px; height: 20px;
-  border-radius: 50%;
-  background: #1DB954;
-  pointer-events: none;
-  transform: translate(-50%, -50%);
-  transition: transform 0.1s ease, background 0.2s ease;
-  z-index: 9999;
-}
+
 .sidebar {
   position: fixed; top: 0; left: 0; width: 240px; height: 100%; background: #191414;
   padding: 20px; box-shadow: 2px 0 10px rgba(0,0,0,0.5);
@@ -60,8 +51,9 @@ body {
 }
 .modal.video-modal { width: 420px; }
 .modal.song-modal { width: 600px; }
+.modal.medium { width: 450px; }
 
-.modal video { border-radius: 12px; width: 100%; border: 3px solid #1DB954; }
+.modal video, .modal img { border-radius: 12px; width: 100%; border: 3px solid #1DB954; }
 .modal button { margin-top: 10px; padding: 8px 12px; border: none; border-radius: 6px; background: #1DB954; color: #000; font-weight: bold; cursor: pointer; }
 .modal button:hover { background: #1ed760; }
 .close-btn { position: absolute; top: 10px; right: 10px; border: none; border-radius: 50%; width: 30px; height: 30px; background: #1DB954; color: #000; font-weight: bold; cursor: pointer; }
@@ -87,29 +79,14 @@ body {
   max-width: 75%;
   word-wrap: break-word;
 }
+.chat-sent { background: #1DB954; color: #000; align-self: flex-end; text-align: right; border-bottom-right-radius: 4px; }
+.chat-received { background: #282828; color: #fff; align-self: flex-start; text-align: left; border-bottom-left-radius: 4px; }
 
-.chat-sent {
-  background: #1DB954;
-  color: #000;
-  align-self: flex-end;
-  text-align: right;
-  border-bottom-right-radius: 4px;
-}
-
-.chat-received {
-  background: #282828;
-  color: #fff;
-  align-self: flex-start;
-  text-align: left;
-  border-bottom-left-radius: 4px;
-}
-
-input, select { padding: 6px; border-radius: 6px; border: none; margin-bottom: 10px; width: 100%; }
+input, select { padding: 6px; border-radius: 6px; border: none; margin: 0 auto 10px auto; width: 150px; display:block; }
 button { cursor: pointer; }
 </style>
 </head>
 <body>
-<div class="cursor"></div>
 
 <div class="sidebar">
   <h2>Song Suggestor</h2>
@@ -138,14 +115,8 @@ button { cursor: pointer; }
 </div>
 
 <script>
-const cursor = document.querySelector('.cursor');
-document.addEventListener('mousemove', e => { cursor.style.left = e.clientX + 'px'; cursor.style.top = e.clientY + 'px'; });
-document.addEventListener('mouseover', e=>{
-  if(e.target.closest('button,a,input,select,.close-btn')) cursor.style.transform='translate(-50%,-50%) scale(2)';
-  else cursor.style.transform='translate(-50%,-50%) scale(1)';
-});
-
 let currentUsername = "{{ username }}";
+let currentEmail = "{{ email }}";
 let currentGender = "{{ gender }}";
 let currentAge = "{{ age }}";
 
@@ -166,46 +137,61 @@ function createPopup(title, innerHTML, extraClass="") {
   return modal;
 }
 
-// Profile
+// --- Profile Info (Read Only) ---
 document.getElementById("openProfile").addEventListener("click", ()=>{
-  const modal = createPopup("Edit Profile", `
-    <input type="text" placeholder="Gender" id="profileGender" value="${currentGender}">
-    <input type="number" placeholder="Age" id="profileAge" value="${currentAge}">
-    <button id="saveProfileBtn">Save</button>
-  `);
-  modal.querySelector("#saveProfileBtn").addEventListener("click", ()=>{
-    const gender = modal.querySelector("#profileGender").value;
-    const age = modal.querySelector("#profileAge").value;
-    fetch("/update_profile",{method:"POST", headers:{"Content-Type":"application/x-www-form-urlencoded"}, body:`gender=${gender}&age=${age}`})
-      .then(()=>{ modal.remove(); location.reload(); });
-  });
+  createPopup("Profile Info", `
+    <p><b>Username:</b> ${currentUsername}</p>
+    <p><b>Email:</b> ${currentEmail}</p>
+    <p><b>Gender:</b> ${currentGender || "None"}</p>
+    <p><b>Age:</b> ${currentAge || "None"}</p>
+  `, "medium");
 });
 
-// Settings
+// --- Settings (Editable except Username) ---
+// --- Settings (Editable except Username) ---
 document.getElementById("sidebarSettings").addEventListener("click", ()=>{
   const modal = createPopup("Settings", `
-    <input type="text" placeholder="Gender" id="settingsGender" value="${currentGender}">
-    <input type="number" placeholder="Age" id="settingsAge" value="${currentAge}">
+    <input type="text" value="${currentUsername}" readonly>
+    <input type="text" id="settingsEmail" value="${currentEmail}">
+    <input type="text" id="settingsGender" value="${currentGender}">
+    <input type="number" id="settingsAge" value="${currentAge}">
     <button id="saveSettingsBtn">Save</button>
-  `);
+  `, "medium");
+
   modal.querySelector("#saveSettingsBtn").addEventListener("click", ()=>{
+    const email = modal.querySelector("#settingsEmail").value;
     const gender = modal.querySelector("#settingsGender").value;
     const age = modal.querySelector("#settingsAge").value;
-    fetch("/update_profile",{method:"POST", headers:{"Content-Type":"application/x-www-form-urlencoded"}, body:`gender=${gender}&age=${age}`})
-      .then(()=>{ modal.remove(); location.reload(); });
+
+    fetch("/update_profile",{
+      method:"POST", 
+      headers:{"Content-Type":"application/x-www-form-urlencoded"}, 
+      body:`email=${encodeURIComponent(email)}&gender=${encodeURIComponent(gender)}&age=${encodeURIComponent(age)}`
+    }).then(()=>{
+      // Update JS variables dynamically
+      currentEmail = email;
+      currentGender = gender;
+      currentAge = age;
+      modal.remove(); // close settings popup
+      
+    });
   });
 });
 
-// Chat
-function showUnreadDot(flag){ document.getElementById("sidebarChat").classList.toggle("new-message", flag); }
 
-document.getElementById("sidebarChat").addEventListener("click", ()=>{
+// --- Chat ---
+function showUnreadDot(flag) {
+  document.getElementById("sidebarChat").classList.toggle("new-message", flag);
+}
+
+document.getElementById("sidebarChat").addEventListener("click", () => {
   showUnreadDot(false);
+
   const modal = createPopup("Chat", `
     <select id="chat-users"></select>
     <div id="chat-box"></div>
-    <div style="display:flex;">
-      <input type="text" id="chat-input" placeholder="Type message..." style="flex:1; border-radius:20px; border:none; padding:10px;">
+    <div style="display:flex; margin-top:5px;">
+      <input type="text" id="chat-input" placeholder="Type message..." style="flex:1; border-radius:20px; padding:10px;">
       <button id="chat-send" style="margin-left:10px; border-radius:20px;">Send</button>
     </div>
   `);
@@ -213,88 +199,121 @@ document.getElementById("sidebarChat").addEventListener("click", ()=>{
   const chatBox = modal.querySelector("#chat-box");
   let currentChatUser = null;
 
-  function loadChatUsers(){
-    fetch("/users/list").then(r=>r.json()).then(users=>{
-      const sel = modal.querySelector("#chat-users"); sel.innerHTML="";
-      const defaultOption=document.createElement("option"); defaultOption.value=""; defaultOption.innerText="Select User"; sel.appendChild(defaultOption);
-      users.filter(u=>u!==currentUsername).forEach(u=>{
-        const opt=document.createElement("option"); opt.value=u; opt.innerText=u; sel.appendChild(opt);
+  // Load all users except current
+  function loadChatUsers() {
+    fetch("/users/list", { credentials: 'same-origin' })
+      .then(r => r.json())
+      .then(users => {
+        const sel = modal.querySelector("#chat-users");
+        sel.innerHTML = "";
+        const defaultOption = document.createElement("option");
+        defaultOption.value = "";
+        defaultOption.innerText = "Select User";
+        sel.appendChild(defaultOption);
+        users.forEach(u => {
+          const opt = document.createElement("option");
+          opt.value = u;
+          opt.innerText = u;
+          sel.appendChild(opt);
+        });
       });
-    });
   }
 
-  function loadMessages(){
-    if(!currentChatUser) return;
-    fetch(`/chat/fetch?user=${currentChatUser}`).then(r=>r.json()).then(msgs=>{
-      if(msgs.error){ chatBox.innerHTML=`<p style='color:red;'>${msgs.error}</p>`; return; }
-      if(msgs.length===0){ chatBox.innerHTML="<p style='color:gray;'>No messages yet.</p>"; return; }
-
-      chatBox.innerHTML = msgs.map(m=>{
-        const isSent = m.from === currentUsername;
-        const cls = isSent ? "chat-sent" : "chat-received";
-        const displayName = isSent ? "You" : m.from;
-        return `<div class="chat-message ${cls}"><div><b>${displayName}</b></div><div>${m.text}</div></div>`;
-      }).join("");
-      chatBox.scrollTop = chatBox.scrollHeight;
-    });
+  // Load messages with selected user
+  function loadMessages() {
+    if (!currentChatUser) return;
+    fetch(`/chat/fetch?user=${currentChatUser}`, { credentials: 'same-origin' })
+      .then(r => r.json())
+      .then(msgs => {
+        chatBox.innerHTML = msgs.map(m => {
+          const isSent = m.from === currentUsername;
+          const cls = isSent ? "chat-sent" : "chat-received";
+          const displayName = isSent ? "You" : m.from;
+          return `<div class="chat-message ${cls}"><div><b>${displayName}</b></div><div>${m.text}</div></div>`;
+        }).join("");
+        chatBox.scrollTop = chatBox.scrollHeight;
+      });
   }
 
-  modal.querySelector("#chat-users").addEventListener("change", e=>{
-    currentChatUser = e.target.value; loadMessages();
-  });
+  // On user select
+modal.querySelector("#chat-users").addEventListener("change", e => {
+    currentChatUser = e.target.value;
+    chatBox.innerHTML = ""; // Clear previous messages
+    if(currentChatUser) loadMessages();
+});
 
-  modal.querySelector("#chat-send").addEventListener("click", ()=>{
-    const text = modal.querySelector("#chat-input").value;
-    if(!text || !currentChatUser) return alert("Select a user and type a message.");
-    fetch("/chat/send",{method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({to:currentChatUser, text})})
-      .then(r=>r.json()).then(res=>{
-        if(res.error){ alert(res.error); return; }
-        modal.querySelector("#chat-input").value="";
-        loadMessages();
-      });
+
+  // Send message
+  modal.querySelector("#chat-send").addEventListener("click", () => {
+    const text = modal.querySelector("#chat-input").value.trim();
+    if (!text || !currentChatUser) return alert("Select a user and type a message.");
+    fetch("/chat/send", {
+      method: "POST",
+      credentials: 'same-origin',
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ to: currentChatUser, text })
+    }).then(() => {
+      modal.querySelector("#chat-input").value = "";
+      loadMessages();
+    });
   });
 
   loadChatUsers();
+  // Auto-refresh chat every 3s
   setInterval(loadMessages, 3000);
 });
 
-// Mood Detection
+
+// --- Mood Detection ---
 document.getElementById("detectMoodBtn").addEventListener("click", ()=>{
-  closeAllPopups();
-  const modal = createPopup("Detecting Mood", `
-    <video autoplay id="webcam-video" style="width:100%; border-radius:12px; border:3px solid #1DB954;"></video>
-    <button id="captureBtn">Capture Face</button>
-    <div id="mood-result"></div>
-  `, "video-modal");
+  function startMoodFlow(){
+    closeAllPopups();
+    const modal = createPopup("Detecting Mood", `
+      <div id="camera-box">
+        <video autoplay id="webcam-video"></video>
+      </div>
+      <button id="captureBtn">Capture Face</button>
+      <div id="mood-result"></div>
+    `, "video-modal");
 
-  const videoEl = modal.querySelector("#webcam-video");
-  const captureBtn = modal.querySelector("#captureBtn");
-  const moodResult = modal.querySelector("#mood-result");
+    const videoEl = modal.querySelector("#webcam-video");
+    const captureBtn = modal.querySelector("#captureBtn");
+    const moodResult = modal.querySelector("#mood-result");
+    const cameraBox = modal.querySelector("#camera-box");
 
-  navigator.mediaDevices.getUserMedia({video:true}).then(stream=>{
-    videoEl.srcObject = stream;
-    captureBtn.addEventListener("click", ()=>{
-      const canvas=document.createElement("canvas");
-      canvas.width=videoEl.videoWidth; canvas.height=videoEl.videoHeight;
-      const ctx=canvas.getContext("2d"); ctx.drawImage(videoEl,0,0);
-      const dataURL=canvas.toDataURL("image/jpeg");
+    navigator.mediaDevices.getUserMedia({video:true}).then(stream=>{
+      videoEl.srcObject = stream;
 
-      fetch("/predict",{method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({image:dataURL})})
-        .then(r=>r.json())
-        .then(res=>{
-          stream.getTracks().forEach(t=>t.stop());
-          if(!res.emotion || res.emotion==="No face detected"){
-            moodResult.innerHTML="<p style='color:red'>No face detected. Try again.</p>";
-          } else {
-            moodResult.innerHTML=`<p>Your mood: <b>${res.emotion}</b></p><button id="suggestBtn">Suggest Songs</button>`;
-            modal.querySelector("#suggestBtn").addEventListener("click", ()=>openSongPopup(res.emotion));
-          }
-        });
-    });
-  }).catch(err=>{ alert("Webcam access denied."); modal.remove(); });
+      captureBtn.addEventListener("click", ()=>{
+        const canvas=document.createElement("canvas");
+        canvas.width=videoEl.videoWidth; canvas.height=videoEl.videoHeight;
+        const ctx=canvas.getContext("2d"); ctx.drawImage(videoEl,0,0);
+        const dataURL=canvas.toDataURL("image/jpeg");
+
+        // stop camera
+        if(stream) stream.getTracks().forEach(t=>t.stop());
+
+        // replace video with captured image
+        cameraBox.innerHTML = `<img src="${dataURL}">`;
+
+        fetch("/predict",{method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({image:dataURL})})
+          .then(r=>r.json())
+          .then(res=>{
+            if(!res.emotion || res.emotion==="No face detected"){
+              moodResult.innerHTML="<p style='color:red'>No face detected.</p><button id='retryBtn'>Retry</button>";
+              document.getElementById("retryBtn").addEventListener("click", ()=> startMoodFlow());
+            } else {
+              moodResult.innerHTML=`<p>Your mood: <b>${res.emotion}</b></p><button id="suggestBtn">Suggest Songs</button>`;
+              modal.querySelector("#suggestBtn").addEventListener("click", ()=>openSongPopup(res.emotion));
+            }
+          });
+      });
+    }).catch(()=>{ alert("Webcam access denied."); modal.remove(); });
+  }
+  startMoodFlow();
 });
 
-// Songs Popup
+// --- Songs ---
 function openSongPopup(mood){
   closeAllPopups();
   const modal = createPopup(`Your Mood: ${mood}`, `<div id="song-grid"></div>`, "song-modal");
@@ -310,6 +329,35 @@ function openSongPopup(mood){
       });
     });
 }
+// --- Chat click handler ---
+document.getElementById("sidebarChat").addEventListener("click", () => {
+  if (!isLoggedIn) {
+    // Create a small login prompt modal
+    closeAllPopups(); // remove any existing popups
+    const modal = document.createElement("div");
+    modal.className = "modal medium";
+    modal.innerHTML = `
+      <button class="close-btn">X</button>
+      <h2>Login Required</h2>
+      <p>You must login to use chat!</p>
+      <button id="goLoginBtn">Login</button>
+    `;
+    document.body.appendChild(modal);
+
+    // Close modal button
+    modal.querySelector(".close-btn").addEventListener("click", () => modal.remove());
+
+    // Redirect to login page
+    modal.querySelector("#goLoginBtn").addEventListener("click", () => {
+      window.location.href = "/login";
+    });
+
+    return;
+  }
+
+  // Existing chat modal code here for logged-in users
+});
+
 </script>
 </body>
 </html>
