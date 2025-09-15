@@ -16,18 +16,9 @@
         height: 100vh;
         margin: 0;
         overflow: hidden;
-        cursor: none;
+        cursor: default; /* normal cursor */
     }
-    .cursor {
-        position: fixed;
-        width: 20px; height: 20px;
-        border-radius: 50%;
-        background: #1DB954;
-        pointer-events: none;
-        transform: translate(-50%, -50%);
-        transition: transform 0.1s ease, background 0.2s ease;
-        z-index: 9999;
-    }
+
     .login-container {
         background-color: #191414;
         padding: 40px 30px;
@@ -37,36 +28,92 @@
         max-width: 400px;
         text-align: center;
     }
+
     h2 { color: #1DB954; margin-bottom: 20px; }
+
     input[type="text"], input[type="password"] {
-        width: 100%; padding: 12px 15px; margin: 10px 0;
-        border-radius: 8px; border: none; background-color: #282828; color: #fff;
+        width: 100%;
+        padding: 12px 15px;
+        margin: 10px 0;
+        border-radius: 8px;
+        border: none;
+        background-color: #282828;
+        color: #fff;
+        font-size: 0.95rem;
     }
+
     input::placeholder { color: #B3B3B3; }
+
     button {
-        width: 100%; padding: 12px 0; margin-top: 20px;
-        border: none; border-radius: 8px; background-color: #1DB954;
-        color: #fff; font-size: 1rem; cursor: pointer;
+        width: 100%;
+        padding: 12px 0;
+        margin-top: 20px;
+        border: none;
+        border-radius: 8px;
+        background-color: #1DB954;
+        color: #fff;
+        font-size: 1rem;
+        cursor: pointer;
         transition: transform 0.2s, background 0.2s;
     }
+
     button:hover { background-color: #1ed760; transform: scale(1.05); }
+
     .captcha-section {
-        display: flex; align-items: center; justify-content: space-between; margin-top: 15px;
+        display: flex;
+        align-items: center;
+        margin-top: 15px;
+        gap: 10px;
     }
-    .captcha-section img { border-radius: 8px; height: 60px; }
-    .captcha-section input { flex: 1; margin-left: 10px; }
-    .register-link { margin-top: 15px; display: block; color: #1DB954; text-decoration: none; }
+
+    .captcha-section img {
+        border-radius: 8px;
+        height: 50px;
+    }
+
+    .captcha-section input {
+        flex: 1;
+        padding: 10px;
+        border-radius: 6px;
+        border: none;
+        background-color: #282828;
+        color: #fff;
+    }
+
+    .register-link {
+        margin-top: 15px;
+        display: block;
+        color: #1DB954;
+        text-decoration: none;
+        font-size: 0.9rem;
+    }
+
     .register-link:hover { text-decoration: underline; }
-    .error-msg { color: #ff4b4b; margin-bottom: 10px; }
-    .success-msg { color: #1ed760; margin-bottom: 10px; }
+
+    .error-msg { color: #ff4b4b; margin-bottom: 10px; font-size: 0.9rem; }
+    .success-msg { color: #1ed760; margin-bottom: 10px; font-size: 0.9rem; }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+        .login-container {
+            padding: 25px 20px;
+        }
+        .captcha-section {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        .captcha-section img {
+            height: 40px;
+            margin-bottom: 10px;
+        }
+    }
 </style>
 </head>
 <body>
-<div class="cursor"></div>
+
 <div class="login-container">
     <h2>Login</h2>
     
-    <!-- Display error if any -->
     {% if error %}
         <div class="error-msg">{{ error }}</div>
     {% endif %}
@@ -91,17 +138,5 @@
     <a class="register-link" href="{{ url_for('register') }}">Don't have an account? Register</a>
 </div>
 
-<script>
-const cursor = document.querySelector('.cursor');
-document.addEventListener('mousemove', e => {
-    cursor.style.left = e.clientX + 'px';
-    cursor.style.top = e.clientY + 'px';
-});
-const buttons = document.querySelectorAll('button, .register-link');
-buttons.forEach(btn => {
-    btn.addEventListener('mouseover', () => cursor.style.transform = 'translate(-50%, -50%) scale(2)');
-    btn.addEventListener('mouseout', () => cursor.style.transform = 'translate(-50%, -50%) scale(1)');
-});
-</script>
 </body>
 </html>
