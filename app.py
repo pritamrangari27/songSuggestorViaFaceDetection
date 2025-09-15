@@ -1,4 +1,4 @@
-import os, time, base64, json, secrets, threading
+import os, time, base64, json, secrets, threading, random
 import numpy as np, cv2
 from io import BytesIO
 from PIL import Image, ImageDraw, ImageFont
@@ -41,8 +41,8 @@ emotion_labels = ['Angry', 'Disgust', 'Fear', 'Happy', 'Sad', 'Surprise', 'Neutr
 # ---------------------------
 # Spotify Setup
 # ---------------------------
-SPOTIFY_CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID", "YOUR_CLIENT_ID")
-SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET", "YOUR_CLIENT_SECRET")
+SPOTIFY_CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID", "dfae3d26fe9b430daebf6bedae6f1320")
+SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET", "982424fd187b404d9e604a2b1b4cbd54")
 auth_manager = SpotifyClientCredentials(client_id=SPOTIFY_CLIENT_ID, client_secret=SPOTIFY_CLIENT_SECRET)
 sp = spotipy.Spotify(auth_manager=auth_manager)
 
@@ -126,32 +126,41 @@ CACHE_TTL_SECONDS = 10*60
 last_mood = None
 
 def get_songs_spotify(mood):
+    """Return 5 unique Spotify tracks (songs only) for a given mood."""
     global _song_cache
     mood_key = (mood or "chill").lower()
     now = time.time()
+    
+    # Use cache if valid
     cached = _song_cache.get(mood_key)
     if cached and now - cached[0] < CACHE_TTL_SECONDS:
-        return cached[1]
-    query = f"{mood_to_query(mood)} bollywood"
-    tracks=[]
-    try:
-        results = sp.search(q=query,type="track",limit=30)
-        seen=set()
-        for t in results.get("tracks",{}).get("items",[]):
-            tid = t.get("id")
-            if not tid or tid in seen: continue
-            tracks.append({"name":t.get("name","Unknown"),
-                           "artist":t.get("artists",[{}])[0].get("name","Unknown"),
-                           "url":f"https://open.spotify.com/embed/track/{tid}"})
-            seen.add(tid)
-            if len(tracks)>=10: break
-        while len(tracks)<5:
-            tracks.append(FALLBACK_TRACK.copy())
-    except Exception as e:
-        print("Spotify error:",e)
-        tracks=[FALLBACK_TRACK.copy() for _ in range(5)]
-    _song_cache[mood_key]=(now,tracks)
-    return tracks
+        tracks = cached[1]
+    else:
+        query = f"{mood_to_query(mood)} bollywood"
+        tracks=[]
+        try:
+            results = sp.search(q=query, type="track", limit=50)
+            seen=set()
+            for t in results.get("tracks", {}).get("items", []):
+                tid = t.get("id")
+                if not tid or tid in seen: continue
+                tracks.append({
+                    "name": t.get("name","Unknown"),
+                    "artist": t.get("artists",[{}])[0].get("name","Unknown"),
+                    "url": f"https://open.spotify.com/embed/track/{tid}"
+                })
+                seen.add(tid)
+            if len(tracks)<5:
+                while len(tracks)<5:
+                    tracks.append(FALLBACK_TRACK.copy())
+        except Exception as e:
+            print("Spotify error:", e)
+            tracks = [FALLBACK_TRACK.copy() for _ in range(5)]
+        _song_cache[mood_key]=(now,tracks)
+    
+    if len(tracks) <= 5:
+        return tracks
+    return random.sample(tracks,5)
 
 # ---------------------------
 # Routes
@@ -214,8 +223,9 @@ def dashboard():
     user_info = users.get(username,{})
     return render_template("dashboard.html", 
                            username=username, 
-                           gender=user_info.get("gender",""), 
-                           age=user_info.get("age",""))
+                           email=user_info.get("email","None"),
+                           gender=user_info.get("gender","None"), 
+                           age=user_info.get("age","None"))
 
 @app.route("/update_profile",methods=["POST"])
 @jwt_required()
@@ -224,6 +234,7 @@ def update_profile():
     users=load_users()
     users[username]["gender"]=request.form.get("gender","").strip()
     users[username]["age"]=request.form.get("age","").strip()
+    users[username]["email"]=request.form.get("email","").strip()
     save_users(users)
     return redirect(url_for("dashboard"))
 
@@ -260,40 +271,55 @@ def songs():
     safe_mood=(mood or "chill").strip()
     if safe_mood.lower() in ("no face detected","not detected","none",""): safe_mood="chill"
     tracks=get_songs_spotify(safe_mood)
-    return jsonify({"mood":safe_mood,"songs":tracks[:4]})
+    return jsonify({"mood":safe_mood,"songs":tracks})
 
 # ---------------------------
 # Chat routes
 # ---------------------------
-@app.route("/chat/send",methods=["POST"])
-@jwt_required()
+@app.route("/chat/send", methods=["POST"])
+@jwt_required()  # require login
 def chat_send():
-    body=request.get_json()
+    body = request.get_json()
     if not body or "to" not in body or "text" not in body:
-        return jsonify({"error":"Missing fields"}),400
-    username = get_jwt_identity()
-    msg={"from":username,"to":body["to"],"text":body["text"],"ts":int(time.time())}
-    msgs=load_messages(); msgs.append(msg); save_messages(msgs)
-    return jsonify({"status":"ok"})
+        return jsonify({"error": "Missing fields"}), 400
+    
+    username = get_jwt_identity()  # guaranteed to be logged in
+    msg = {
+        "from": username,
+        "to": body["to"],
+        "text": body["text"],
+        "ts": int(time.time())
+    }
+    msgs = load_messages()
+    msgs.append(msg)
+    save_messages(msgs)
+    return jsonify({"status": "ok"})
 
-@app.route("/chat/fetch",methods=["GET"])
-@jwt_required()
+
+@app.route("/chat/fetch", methods=["GET"])
+@jwt_required()  # require login
 def chat_fetch():
-    chat_with=request.args.get("user")
-    if not chat_with: return jsonify({"error":"Missing user"}),400
-    username=get_jwt_identity()
-    msgs=load_messages()
-    convo=[m for m in msgs if (m["from"]==username and m["to"]==chat_with) or (m["from"]==chat_with and m["to"]==username)]
-    convo.sort(key=lambda x:x["ts"])
+    chat_with = request.args.get("user")
+    if not chat_with:
+        return jsonify({"error": "Missing user"}), 400
+    
+    username = get_jwt_identity()  # guaranteed to be logged in
+
+    msgs = load_messages()
+    convo = [m for m in msgs if (m["from"] == username and m["to"] == chat_with) or
+                             (m["from"] == chat_with and m["to"] == username)]
+    convo.sort(key=lambda x: x["ts"])
     return jsonify(convo)
 
-@app.route("/users/list",methods=["GET"])
-@jwt_required()
+@app.route("/users/list", methods=["GET"])
+@jwt_required()  # require login
 def users_list():
-    users=load_users()
-    username=get_jwt_identity()
-    others=[u for u in users if u!=username]
+    users = load_users()
+    username = get_jwt_identity()
+    others = [u for u in users if u != username]
     return jsonify(others)
+
+
 
 # ---------------------------
 # Run app
