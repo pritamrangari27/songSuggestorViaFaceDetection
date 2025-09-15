@@ -41,8 +41,8 @@ emotion_labels = ['Angry', 'Disgust', 'Fear', 'Happy', 'Sad', 'Surprise', 'Neutr
 # ---------------------------
 # Spotify Setup
 # ---------------------------
-SPOTIFY_CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID", "dfae3d26fe9b430daebf6bedae6f1320")
-SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET", "982424fd187b404d9e604a2b1b4cbd54")
+SPOTIFY_CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID", "Your Credentials")
+SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET", "Your Credentials")
 auth_manager = SpotifyClientCredentials(client_id=SPOTIFY_CLIENT_ID, client_secret=SPOTIFY_CLIENT_SECRET)
 sp = spotipy.Spotify(auth_manager=auth_manager)
 
@@ -326,3 +326,4 @@ def users_list():
 # ---------------------------
 if __name__=="__main__":
     app.run(debug=True,use_reloader=False)
+
