@@ -13,23 +13,26 @@
         display: flex;
         justify-content: center;
         align-items: center;
-        height: 100vh;
+        min-height: 100vh;
         margin: 0;
-        overflow: hidden;
-        cursor: default; /* normal cursor */
+        padding: 10px;
+        cursor: default;
+        box-sizing: border-box;
     }
 
     .login-container {
         background-color: #191414;
-        padding: 40px 30px;
-        border-radius: 16px;
+        padding: 32px 18px;
+        border-radius: 14px;
         box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-        width: 100%;
-        max-width: 400px;
+        width: 90vw;
+        max-width: 300px;
         text-align: center;
+        box-sizing: border-box;
+        transition: all 0.3s ease;
     }
 
-    h2 { color: #1DB954; margin-bottom: 20px; }
+    h2 { color: #1DB954; margin-bottom: 20px; font-size: 1.8rem; }
 
     input[type="text"], input[type="password"] {
         width: 100%;
@@ -39,7 +42,13 @@
         border: none;
         background-color: #282828;
         color: #fff;
-        font-size: 0.95rem;
+        font-size: 1rem;
+        box-sizing: border-box;
+        outline: none;
+        transition: box-shadow 0.2s;
+    }
+    input[type="text"]:focus, input[type="password"]:focus {
+        box-shadow: 0 0 0 2px #1DB95444;
     }
 
     input::placeholder { color: #B3B3B3; }
@@ -55,30 +64,13 @@
         font-size: 1rem;
         cursor: pointer;
         transition: transform 0.2s, background 0.2s;
+        outline: none;
     }
-
+    button:active {
+        background-color: #1ed760;
+        transform: scale(0.98);
+    }
     button:hover { background-color: #1ed760; transform: scale(1.05); }
-
-    .captcha-section {
-        display: flex;
-        align-items: center;
-        margin-top: 15px;
-        gap: 10px;
-    }
-
-    .captcha-section img {
-        border-radius: 8px;
-        height: 50px;
-    }
-
-    .captcha-section input {
-        flex: 1;
-        padding: 10px;
-        border-radius: 6px;
-        border: none;
-        background-color: #282828;
-        color: #fff;
-    }
 
     .register-link {
         margin-top: 15px;
@@ -86,6 +78,7 @@
         color: #1DB954;
         text-decoration: none;
         font-size: 0.9rem;
+        word-wrap: break-word;
     }
 
     .register-link:hover { text-decoration: underline; }
@@ -93,19 +86,24 @@
     .error-msg { color: #ff4b4b; margin-bottom: 10px; font-size: 0.9rem; }
     .success-msg { color: #1ed760; margin-bottom: 10px; font-size: 0.9rem; }
 
-    /* Responsive */
+    @media (max-width: 768px) {
+        .login-container {
+            padding: 22px 8px;
+            border-radius: 12px;
+        }
+        h2 { font-size: 1.3rem; }
+        input[type="text"], input[type="password"] { font-size: 0.93rem; padding: 9px 10px; }
+        button { font-size: 0.93rem; padding: 10px 0; }
+    }
+
     @media (max-width: 480px) {
         .login-container {
-            padding: 25px 20px;
+            padding: 12px 4px;
+            border-radius: 9px;
         }
-        .captcha-section {
-            flex-direction: column;
-            align-items: stretch;
-        }
-        .captcha-section img {
-            height: 40px;
-            margin-bottom: 10px;
-        }
+        h2 { font-size: 1.05rem; }
+        input[type="text"], input[type="password"] { font-size: 0.88rem; padding: 7px; }
+        button { font-size: 0.88rem; padding: 8px 0; }
     }
 </style>
 </head>
@@ -125,12 +123,7 @@
         <input type="text" name="username" placeholder="Username" required>
         <input type="password" name="password" placeholder="Password" required>
 
-        <!-- CAPTCHA -->
-        <div class="captcha-section">
-            <img src="{{ captcha_image }}" alt="Captcha">
-            <input type="text" name="captcha" placeholder="Enter CAPTCHA" required>
-            <input type="hidden" name="captcha_code" value="{{ captcha_code }}">
-        </div>
+
 
         <button type="submit">Login</button>
     </form>
