@@ -13,26 +13,29 @@
         display: flex;
         justify-content: center;
         align-items: center;
-        height: 100vh;
+        min-height: 100vh;
         margin: 0;
-        overflow: hidden;
-        cursor: default; /* normal cursor */
         padding: 20px;
+        cursor: default;
+        box-sizing: border-box;
     }
 
     .register-container {
         background-color: #191414;
-        padding: 30px 25px;
-        border-radius: 16px;
-        box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-        width: 100%;
-        max-width: 400px;
+        padding: 28px 14px;
+        border-radius: 14px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+        width: 90vw;
+        max-width: 300px;
         text-align: center;
+        transition: all 0.3s ease;
+        box-sizing: border-box;
     }
 
     h2 {
         color: #1DB954;
         margin-bottom: 20px;
+        font-size: 1.8rem;
     }
 
     .form-group {
@@ -43,29 +46,29 @@
     .form-group label {
         display: block;
         margin-bottom: 6px;
-        font-size: 0.9rem;
+        font-size: 0.95rem;
         color: #B3B3B3;
     }
 
     input, select {
         width: 100%;
-        padding: 12px 15px;
+        padding: 14px 16px;
         border-radius: 8px;
         border: none;
         background-color: #282828;
         color: #fff;
         font-size: 1rem;
         box-sizing: border-box;
+        margin-bottom: 2px;
     }
 
     input::placeholder {
         color: #B3B3B3;
     }
 
-    /* Flex row for gender & age */
     .row {
         display: flex;
-        gap: 10px;
+        gap: 15px;
     }
 
     .row .form-group {
@@ -75,13 +78,14 @@
 
     button {
         width: 100%;
-        padding: 12px 0;
+        padding: 14px 0;
         margin-top: 20px;
         border: none;
         border-radius: 8px;
         background-color: #1DB954;
-        color: #fff;
-        font-size: 1rem;
+        color: #000;
+        font-size: 1.08rem;
+        font-weight: bold;
         cursor: pointer;
         transition: transform 0.2s, background 0.2s;
     }
@@ -97,6 +101,7 @@
         color: #1DB954;
         text-decoration: none;
         font-size: 0.9rem;
+        word-wrap: break-word;
     }
 
     .login-link:hover {
@@ -106,21 +111,24 @@
     .error { color: #FF4B4B; margin-top: 10px; font-size: 0.9rem; }
     .success { color: #1ED760; margin-top: 10px; font-size: 0.9rem; }
 
-    /* Responsive */
+    @media (max-width: 768px) {
+        .register-container {
+            padding: 16px 4px;
+            border-radius: 12px;
+        }
+        h2 { font-size: 1.3rem; }
+        input, select, button { font-size: 0.93rem; padding: 10px 8px; }
+        .row { gap: 6px; }
+    }
+
     @media (max-width: 480px) {
         .register-container {
-            padding: 20px 15px;
+            padding: 8px 2px;
+            border-radius: 9px;
         }
-        h2 {
-            font-size: 1.4rem;
-        }
-        input, select, button {
-            font-size: 0.95rem;
-            padding: 10px 12px;
-        }
-        .row {
-            flex-direction: column;
-        }
+        h2 { font-size: 1.05rem; }
+        input, select, button { font-size: 0.88rem; padding: 7px 4px; }
+        .row { flex-direction: column; gap: 4px; }
     }
 </style>
 </head>
