@@ -1,10 +1,7 @@
-songSuggestorViaFaceDetection is a webApplication which allow to user to capture their mood and based on that model is suggesting songs...with additional feature which allow to liveChat with friends.
-U can check it at https://songsuggestor.site/
-
-
 # Mood Detection & Song Suggestor Dashboard
 
 A Flask web application that detects user mood from images and suggests songs using Spotify. Includes user authentication, chat, profile management, and Google Drive integration for image uploads.
+U can check it at https://songsuggestor.site/
 
 ## Features
 - Mood detection from webcam or uploaded images
@@ -67,11 +64,3 @@ train/
     angry/
     ...
 ```
-
-## License
-MIT
-
----
-Feel free to open issues or contribute via pull requests!
-
-
